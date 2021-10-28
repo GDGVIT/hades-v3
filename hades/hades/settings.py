@@ -14,7 +14,9 @@ import os
 from pathlib import Path
 
 import dj_database_url
+from dotenv import load_dotenv
 
+load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -28,23 +30,20 @@ SECRET_KEY = os.environ['SECRET_KEY']
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ['DEBUG']
 
-ALLOWED_HOSTS = ['0.0.0.0']
+ALLOWED_HOSTS = '*'
 
 
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
-    'django.contrib.messages',
     'rest_framework',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
 ]
 
 ROOT_URLCONF = 'hades.urls'
@@ -58,7 +57,7 @@ WSGI_APPLICATION = 'hades.wsgi.application'
 
 DATABASES = {
 
-    'default': {dj_database_url.config(os.environ['DATABASE_URL'])}
+    'default': dj_database_url.config()
 
 }
 
