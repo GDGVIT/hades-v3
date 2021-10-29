@@ -8,8 +8,8 @@ from datetime import date
 class User(AbstractUser):
     username = None
     email = models.EmailField(_('email address'), unique = True)
-    phone_no = models.CharField(max_length = 10)
-    profile_pic = models.CharField(max_length = 50,null=True)
+    phone_no = models.CharField(max_length = 10,null=True)
+    profile_pic = models.CharField(max_length = 100,null=True)
     first_name = models.CharField(max_length=50,null=False)
     last_name = models.CharField(max_length=50,null=False)
     USERNAME_FIELD = 'email'

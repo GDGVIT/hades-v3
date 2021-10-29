@@ -32,7 +32,7 @@ DEBUG = os.environ['DEBUG']
 
 ALLOWED_HOSTS = '*'
 
-
+CLIENT_ID = os.environ['CLIENT_ID']
 # Application definition
 
 INSTALLED_APPS = [
