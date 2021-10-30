@@ -1,4 +1,3 @@
-from http.client import TEMPORARY_REDIRECT
 from django.conf import settings
 from .models import User
 from django.contrib.auth import authenticate

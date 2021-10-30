@@ -10,8 +10,14 @@ class CustomAuthentication(authentication.BaseAuthentication):
     key = settings.SECRET_KEY
     header = 'Token'
     def authenticate(self, request):
-        token = request.META.get('HTTP_AUTHORIZATION')
-        claims = jwt.api_jwt.decode(token,self.key,'HS256')
+        token = request.META.get('HTTP_AUTHORIZATION').split()
+        if token[0] != 'Token':
+            raise exceptions.AuthenticationFailed('invalid token')
+        try:
+            token = token[1].encode()
+            claims = jwt.api_jwt.decode(token,self.key,'HS256')
+        except:
+            raise exceptions.AuthenticationFailed('invalid token')
         if not claims['email']:
             return None
 
