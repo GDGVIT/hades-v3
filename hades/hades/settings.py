@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'rest_framework',
     'user',
+    'organisation',
 ]
 
 AUTH_USER_MODEL = 'user.User'
