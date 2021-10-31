@@ -9,7 +9,7 @@ class Organisation(models.Model):
     contact_no = models.CharField(max_length=10)
 
 class Member(models.Model):
-    user = models.ForeignKey(User,on_delete=models.CASCADE,related_name='user')
-    organisation = models.ForeignKey(Organisation,on_delete=models.CASCADE,related_name='organisation')
+    user = models.ForeignKey(User,on_delete=models.CASCADE,related_name='member')
+    organisation = models.ForeignKey(Organisation,on_delete=models.CASCADE,related_name='member')
     role = models.CharField(max_length=10)
 

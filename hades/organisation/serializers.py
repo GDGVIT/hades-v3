@@ -1,4 +1,4 @@
-from rest_framework import fields, serializers
+from rest_framework import fields, serializers, validators
 
 from user.models import User
 
@@ -25,3 +25,10 @@ class ListMembersSerializer(serializers.ModelSerializer):
     class Meta:
         model =  Member
         fields = ['first_name','email','role']
+
+class ChangeRoleSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField()
+    org_id = serializers.IntegerField()
+    class Meta:
+        model = Member
+        fields = ['email','role','org_id']
