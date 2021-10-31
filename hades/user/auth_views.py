@@ -35,8 +35,8 @@ class EmailAuthViewSet(viewsets.ViewSet):
         user_serializer = UserSerializer(data=request.data)
         auth_serializer.is_valid(raise_exception=True)
         user_serializer.is_valid(raise_exception=True)
-        email_auth_object = auth_serializer.to_representation()
-        user_object = user_serializer.to_representation()
+        email_auth_object = auth_serializer.validated_data
+        user_object = user_serializer.validated_data
         user = User.objects.create_user(email = email_auth_object['email'],
                                         password = email_auth_object['password'],
                                         first_name=user_object['first_name'],
@@ -78,7 +78,7 @@ class GoogleAuthViewSet(viewsets.ViewSet):
         
         user_serializer = UserSerializer(data=temp_data)
         user_serializer.is_valid(raise_exception=True)
-        user_object = user_serializer.to_representation()
+        user_object = user_serializer.validated_data
 
         user = User.objects.create( email = user_object['email'],
                                     first_name=user_object['name'],
