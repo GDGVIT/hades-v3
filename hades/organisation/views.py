@@ -21,10 +21,7 @@ class OrganisationViewSet(viewsets.ViewSet):
     @action(methods=['get'],detail="Get list of organisations the user is in")
     def get_orgs(self,request):
         user = request.user
-        members = Member.objects.filter(user=user)
-        organisations = []
-        for i in members:
-            organisations += [i.organisation]
+        organisations = Member.objects.filter(user=user).select_related('organisation')
         organisations_serializer = ListOrganisationSerializer(organisations,many=True)
         return Response({"status":"success","organisations":organisations_serializer.data})
 
@@ -43,14 +40,12 @@ class OrganisationViewSet(viewsets.ViewSet):
         serializer.is_valid(raise_exception=True)
         role_change_object = serializer.validated_data
         user = request.user
-        if user.email == role_change_object['email']:
-            raise exceptions.ValidationError('your email cant be the same as the email given')
-        organisation = Organisation.objects.filter(pk=role_change_object['org_id']).first()
-        admin_member = user.member.filter(organisation=organisation,role='admin').first()
+        admin_member = user.member.filter(organisation=role_change_object['org_id'],role='admin').first()
         if not admin_member:
             raise exceptions.PermissionDenied('you are not the admin of this organisation')
-        assignee_user = User.objects.filter(email=role_change_object['email']).first()
-        member = Member.objects.filter(user=assignee_user,organisation=organisation).first()
+        if user.email == role_change_object['email']:
+            raise exceptions.ValidationError('your email cant be the same as the email given')
+        member = Member.objects.filter(user=role_change_object['email'],organisation=role_change_object['org_id']).first()
         if not member:
             raise serializers.ValidationError('invalid email')
         serializer.update(member,role_change_object)
@@ -60,14 +55,13 @@ class OrganisationViewSet(viewsets.ViewSet):
     def create_link(self,request):
         serializer = CreateLinkSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        data = serializer.validated_data
+        link_object = serializer.validated_data
         user = request.user
-        organisation = Organisation.objects.filter(pk=data['org_id']).first()
-        admin_member = user.member.filter(organisation=organisation,role='admin').first()
+        admin_member = user.member.filter(organisation=link_object['org_id'],role='admin').first()
         if not admin_member:
             raise exceptions.PermissionDenied('you are not the admin of this organisation')
-        link = 'https://' + request.get_host() + '/organisation/join?token=' + serializer.link(data)
-        return Response({'status':'succcess','link':link,**data})
+        link = 'https://' + request.get_host() + '/organisation/join?token=' + serializer.link(link_object)
+        return Response({'status':'succcess','link':link,**link_object})
 
 
     @action(methods=['get'],detail="User joins organisation using link")

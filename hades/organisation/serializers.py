@@ -60,8 +60,7 @@ class JoinLinkSerializer(serializers.ModelSerializer):
         return link
 
     def create(self, validated_data):
-
-        organisation = Organisation.objects.get(pk=validated_data['org_id'])
+        organisation = validated_data['org_id']
         role = validated_data['role']
         user = validated_data['user']
         member = Member(organisation=organisation,user=user,role=role)
