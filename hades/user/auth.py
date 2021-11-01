@@ -10,7 +10,10 @@ class CustomAuthentication(authentication.BaseAuthentication):
     key = settings.SECRET_KEY
     header = 'Token'
     def authenticate(self, request):
-        token = request.META.get('HTTP_AUTHORIZATION').split()
+        token = request.META.get('HTTP_AUTHORIZATION')
+        if not token:
+            raise exceptions.AuthenticationFailed('invalid token')
+        token = token.split()
         if token[0] != 'Token':
             raise exceptions.AuthenticationFailed('invalid token')
         try:
