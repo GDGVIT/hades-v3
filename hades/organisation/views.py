@@ -2,7 +2,7 @@ from rest_framework import serializers, viewsets
 import rest_framework.exceptions as exceptions
 from rest_framework.response import Response
 from rest_framework.decorators import action
-from .serializers import CreateOrganisationSerializer,ListOrganisationSerializer,ListMembersSerializer ,GetOrganisationSerializer, ChangeRoleSerializer
+from .serializers import CreateOrganisationSerializer,ListOrganisationSerializer,ListMembersSerializer ,GetOrganisationSerializer, ChangeRoleSerializer, CreateLinkSerializer, JoinLinkSerializer
 from .models import Member, Organisation
 from user.models import User
 
@@ -55,5 +55,31 @@ class OrganisationViewSet(viewsets.ViewSet):
             raise serializers.ValidationError('invalid email')
         serializer.update(member,role_change_object)
         return Response({'status':'success','member':role_change_object})
+    
+    @action(method=['get'],detail="Admin creates organisation join link")
+    def create_link(self,request):
+        serializer = CreateLinkSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        user = request.user
+        organisation = Organisation.objects.filter(pk=data['org_id']).first()
+        admin_member = user.member.filter(organisation=organisation,role='admin').first()
+        if not admin_member:
+            raise exceptions.PermissionDenied('you are not the admin of this organisation')
+        link = 'https://' + request.get_host() + '/organisation/join?token=' + serializer.link(data)
+        return Response({'status':'succcess','link':link,**data})
 
-        
+
+    @action(methods=['get'],detail="User joins organisation using link")
+    def join_organisation(self,request):
+        serializer = JoinLinkSerializer(data={'link':request.GET.get('token')})
+        serializer.is_valid(raise_exception=True)
+        member_object = serializer.validated_data
+        user = request.user
+        member = Member.objects.filter(user=user,organisation=member_object['org_id']).first()
+        if member:
+            raise exceptions.ValidationError('you are already part of the organisation')
+        serializer.save(user=user)
+        member_object.pop('exp')
+        return Response({'status':'success',**member_object})
+       
