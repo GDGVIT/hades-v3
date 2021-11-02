@@ -12,3 +12,15 @@ class EmailAuthSerializer(serializers.Serializer):
         except exceptions.ValidationError as e:
             raise e
         return value
+
+class ChangePasswordSerializer(serializers.Serializer):
+    new_password = serializers.CharField(max_length=50)
+    old_password = serializers.CharField(max_length=50,required=False)
+
+    def validate_password(self,value):
+        try:
+            validators.validate_password(password=value)
+
+        except exceptions.ValidationError as e:
+            raise e
+        return value

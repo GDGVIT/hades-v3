@@ -63,7 +63,6 @@ class OrganisationViewSet(viewsets.ViewSet):
         link = 'https://' + request.get_host() + '/organisation/join?token=' + serializer.link(link_object)
         return Response({'status':'succcess','link':link,**link_object})
 
-
     @action(methods=['get'],detail="User joins organisation using link")
     def join_organisation(self,request):
         serializer = JoinLinkSerializer(data={'link':request.GET.get('token')})

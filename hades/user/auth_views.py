@@ -2,11 +2,11 @@ from django.conf import settings
 from .models import User
 from django.contrib.auth import authenticate
 from rest_framework import exceptions, serializers
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view , authentication_classes
 from rest_framework.response import Response
 from rest_framework import viewsets
 import jwt
-from .auth_serializers import EmailAuthSerializer
+from .auth_serializers import ChangePasswordSerializer, EmailAuthSerializer
 from .serializers import UserSerializer
 from django.utils.translation import gettext_lazy as _
 from google.oauth2 import id_token
@@ -89,3 +89,14 @@ class GoogleAuthViewSet(viewsets.ViewSet):
         return Response({"status":"success","user":user_object})
 
         
+@api_view(['POST'])
+def change_password(request):
+    serializer = ChangePasswordSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    object = serializer.validated_data
+    user = request.user
+    if not (not user.has_usable_password() or user.check_password(object.get('old_password'))):
+        raise exceptions.PermissionDenied('invalid credentials')
+    user.set_password(object['new_password'])
+    user.save()
+    return Response({'status':'success','message':'Password change successfull'})
