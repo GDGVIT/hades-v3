@@ -2,13 +2,12 @@ from rest_framework import serializers, viewsets
 import rest_framework.exceptions as exceptions
 from rest_framework.response import Response
 from rest_framework.decorators import action
-from .serializers import CreateOrganisationSerializer,ListOrganisationSerializer,ListMembersSerializer ,GetOrganisationSerializer, ChangeRoleSerializer, CreateLinkSerializer, JoinLinkSerializer
+from .serializers import CreateOrganisationSerializer,UpdateOrganisationSerializer,ListOrganisationSerializer,ListMembersSerializer ,GetOrganisationSerializer, ChangeRoleSerializer, CreateLinkSerializer, JoinLinkSerializer
 from .models import Member, Organisation
 from user.models import User
 
 class OrganisationViewSet(viewsets.ViewSet):
 
-    @action(methods=['put'],detail="Create organisation")
     def create(self,request):
         user = request.user
         organisation_serializer = CreateOrganisationSerializer(data=request.data)
@@ -17,15 +16,24 @@ class OrganisationViewSet(viewsets.ViewSet):
         admin = Member.objects.create(user=user,organisation=organisation,role="admin")
         admin.save()
         return Response({"status":"success","organistation":organisation_serializer.validated_data})
+    
+    def update_org(self,request):
+       serializer = UpdateOrganisationSerializer(data=request.data)
+       serializer.is_valid(raise_exception=True) 
+       organisation_data = serializer.validated_data
+       user = request.user
+       admin_member = user.member.filter(organisation=organisation_data['org_id'],role='admin').first()
+       if not admin_member:
+           raise exceptions.PermissionDenied('you are not the admin of this organisation')
+       Organisation.objects.filter(pk=organisation_data.pop('org_id')).update(**organisation_data)
+       return Response({"status":"success","organisation":organisation_data})
 
-    @action(methods=['get'],detail="Get list of organisations the user is in")
     def get_orgs(self,request):
         user = request.user
         organisations = Member.objects.filter(user=user).select_related('organisation')
         organisations_serializer = ListOrganisationSerializer(organisations,many=True)
         return Response({"status":"success","organisations":organisations_serializer.data})
 
-    @action(methods=['get'],detail="Get details of an organisation")
     def get_org(self,request):
         org_id = request.GET['org_id']
         organisation =  Organisation.objects.get(pk=org_id)
@@ -34,7 +42,6 @@ class OrganisationViewSet(viewsets.ViewSet):
         organisation_serializer = GetOrganisationSerializer(organisation)
         return Response({'status':'success','organisation':organisation_serializer.data,'members':members_serializer.data})
     
-    @action(methods=['post'],detail="Change role of a user in an organisation")
     def assign_role(self,request):
         serializer = ChangeRoleSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -51,7 +58,6 @@ class OrganisationViewSet(viewsets.ViewSet):
         serializer.update(member,role_change_object)
         return Response({'status':'success','member':role_change_object})
     
-    @action(method=['get'],detail="Admin creates organisation join link")
     def create_link(self,request):
         serializer = CreateLinkSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -63,7 +69,6 @@ class OrganisationViewSet(viewsets.ViewSet):
         link = 'https://' + request.get_host() + '/organisation/join?token=' + serializer.link(link_object)
         return Response({'status':'succcess','link':link,**link_object})
 
-    @action(methods=['get'],detail="User joins organisation using link")
     def join_organisation(self,request):
         serializer = JoinLinkSerializer(data={'link':request.GET.get('token')})
         serializer.is_valid(raise_exception=True)

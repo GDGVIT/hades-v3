@@ -12,6 +12,13 @@ class CreateOrganisationSerializer(serializers.ModelSerializer):
         model = Organisation
         fields = '__all__'
 
+class UpdateOrganisationSerializer(serializers.ModelSerializer):
+    org_id = serializers.IntegerField()
+    class Meta:
+        model = Organisation
+        fields = '__all__'
+        extra_kwargs = {'name': {'required': False},'logo_pic':{'required':False},'email':{'required':False},'website':{'required':False},'contact_no':{'required':False}}
+
 class GetOrganisationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Organisation
