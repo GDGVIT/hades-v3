@@ -19,4 +19,5 @@ urlpatterns = [
     path("auth/",include('user.auth_urls')),
     path("user/",include('user.urls')),
     path("organisation/",include('organisation.urls')),
+    path("event/",include('event.urls'))
 ]

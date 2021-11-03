@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'user',
     'organisation',
+    'event',
 ]
 
 AUTH_USER_MODEL = 'user.User'
@@ -53,7 +54,9 @@ REST_FRAMEWORK = {
         'rest_framework.parsers.JSONParser',
     ],
     'EXCEPTION_HANDLER':'hades.exceptions.custom_exception_handler',
+    'DATETIME_FORMAT': "%d-%m-%Y %H:%M",
 }
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

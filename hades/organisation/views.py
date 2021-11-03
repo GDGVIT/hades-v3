@@ -1,10 +1,8 @@
 from rest_framework import serializers, viewsets
 import rest_framework.exceptions as exceptions
 from rest_framework.response import Response
-from rest_framework.decorators import action
 from .serializers import CreateOrganisationSerializer,UpdateOrganisationSerializer,ListOrganisationSerializer,ListMembersSerializer ,GetOrganisationSerializer, ChangeRoleSerializer, CreateLinkSerializer, JoinLinkSerializer
 from .models import Member, Organisation
-from user.models import User
 
 class OrganisationViewSet(viewsets.ViewSet):
 
