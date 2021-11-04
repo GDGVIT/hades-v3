@@ -3,7 +3,8 @@ from django.conf import settings
 
 from organisation.models import Organisation
 from .models import Event, Participant
-from datetime import datetime
+from datetime import datetime, time
+from user.models import User
 import jwt
 
 key = settings.SECRET_KEY
@@ -22,20 +23,20 @@ class JoinLinkSerializer(serializers.ModelSerializer):
     link = serializers.CharField()
     class Meta:
         model = Participant
-        fields = '__all__'
-        read_only_fields = ['organisation','user','role']
+        exclude = ['user','event']
     
     def validate(self, data):
         try:
             link = jwt.decode(data['link'],key,'HS256')
-        except:
+        except Exception as e:
+            print(e)
             raise serializers.ValidationError('invalid link')
         
         return link
 
     def create(self, validated_data):
-        event = validated_data['event_id']
-        refferal = validated_data['refferal_user']
+        event = Event(pk=validated_data['event_id'])
+        refferal = validated_data.get('refferal_user')
         user = validated_data['user']
         participant = Participant(event=event,user=user)
         participant.save()
@@ -43,13 +44,14 @@ class JoinLinkSerializer(serializers.ModelSerializer):
 
 class CreateEventSerializer(serializers.ModelSerializer):
     org_id = serializers.IntegerField()
-    link = CreateLinkSerializer()
     def validate(self, data):
-        timezone = data['start_time'].timez
-        if timezone != data['reg_close_time'].timez or timezone != data['end_time']:
+        timezone = data['start_time'].tzinfo
+        if timezone != data['reg_close_time'].tzinfo or timezone != data['end_time'].tzinfo:
             raise serializers.ValidationError('timezones of timestamps do not match')
         elif datetime.now(tz=timezone) >= data['start_time']:
             raise serializers.ValidationError('event start time cant be before now')
+        elif datetime.now(tz=timezone) >= data['reg_close_time']:
+            raise serializers.ValidationError('registration close time cant be before now')
         elif data['start_time'] >= data['end_time']:
             raise serializers.ValidationError('event start time cant be later than event end time')
         elif data['reg_close_time'] >= data['end_time']:
@@ -57,10 +59,19 @@ class CreateEventSerializer(serializers.ModelSerializer):
         return data
 
     def create(self,data):
-        data.update({'organisation':data.pop('org_id')})
+        data.update({'organisation':Organisation(pk=data.pop('org_id'))})
         event = Event(**data)
         event.save()
         return event
     class Meta:
         model = Event
         exclude = ['organisation']
+
+class ListParticipantsSerializer(serializers.ModelSerializer):
+    first_name = serializers.CharField(source='user.first_name')
+    last_name = serializers.CharField(source='user.last_name')
+    email = serializers.EmailField(source='user.email')
+    phone_no = serializers.CharField(source='user.phone_no')
+    class Meta:
+        model = Participant
+        exclude = ['event','user']

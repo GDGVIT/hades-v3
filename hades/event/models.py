@@ -1,6 +1,5 @@
 from django.db import models
 from django.core.exceptions import ValidationError
-from hades.event.views import EventViewSet
 
 from user.models import User
 from organisation.models import Organisation
@@ -30,6 +29,6 @@ class Event(models.Model):
 
 class Participant(models.Model):
     user = models.ForeignKey(User,on_delete=models.CASCADE,related_name='participant')
-    event = models.ForeignKey(EventViewSet,on_delete=models.CASCADE,related_name='participants')
+    event = models.ForeignKey(Event,on_delete=models.CASCADE,related_name='participants')
 
 
