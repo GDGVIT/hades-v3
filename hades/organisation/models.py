@@ -18,3 +18,6 @@ class Member(models.Model):
     organisation = models.ForeignKey(Organisation,on_delete=models.CASCADE,related_name='member')
     role = models.CharField(max_length=10)
 
+    class Meta:
+        unique_together = ('user','organisation')
+

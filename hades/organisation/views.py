@@ -1,44 +1,52 @@
+from datetime import datetime, timedelta
+import re
 from rest_framework import serializers, viewsets
 import rest_framework.exceptions as exceptions
 from rest_framework.response import Response
-from .serializers import CreateOrganisationSerializer,UpdateOrganisationSerializer,ListOrganisationSerializer,ListMembersSerializer ,GetOrganisationSerializer, ChangeRoleSerializer, CreateLinkSerializer, JoinLinkSerializer
+
+from .serializers import CreateOrganisationSerializer,UpdateOrganisationSerializer,ListOrganisationSerializer,ListMembersSerializer ,GetOrganisationSerializer, ChangeRoleSerializer,CreateMemberSerializer, JoinMemberSerializer
 from .models import Member, Organisation
+from utils.link import *
 
 class OrganisationViewSet(viewsets.ViewSet):
 
     def create(self,request):
-        user = request.user
-        organisation_serializer = CreateOrganisationSerializer(data=request.data)
-        organisation_serializer.is_valid(raise_exception=True)
-        organisation = organisation_serializer.save()
-        admin = Member.objects.create(user=user,organisation=organisation,role="admin")
-        admin.save()
-        return Response({"status":"success","organistation":organisation_serializer.validated_data})
+        user_inst = request.user
+        org_seri = CreateOrganisationSerializer(data=request.data)
+        org_seri.is_valid(raise_exception=True)
+        org_data = org_seri.validated_data
+        org_inst = org_seri.save()
+        adm_inst = Member.objects.create(user=user_inst,organisation=org_inst,role="admin")
+        adm_inst.save()
+        org_data.update({'org_id':org_inst.pk})
+        return Response({"status":"success","organistation":org_data})
     
     def update_org(self,request):
-       serializer = UpdateOrganisationSerializer(data=request.data)
-       serializer.is_valid(raise_exception=True) 
-       organisation_data = serializer.validated_data
+       org_seri = UpdateOrganisationSerializer(data=request.data)
+       org_seri.is_valid(raise_exception=True) 
+       org_data = org_seri.validated_data
        user = request.user
-       admin_member = user.member.filter(organisation=organisation_data['org_id'],role='admin').first()
+       admin_member = user.member.filter(organisation=org_data['org_id'],role='admin').first()
        if not admin_member:
            raise exceptions.PermissionDenied('you are not the admin of this organisation')
-       Organisation.objects.filter(pk=organisation_data.pop('org_id')).update(**organisation_data)
-       return Response({"status":"success","organisation":organisation_data})
+       Organisation.objects.filter(pk=org_data.pop('org_id')).update(**org_data)
+       return Response({"status":"success","organisation":org_data})
 
     def get_orgs(self,request):
-        user = request.user
-        organisations = Member.objects.filter(user=user).select_related('organisation')
-        organisations_serializer = ListOrganisationSerializer(organisations,many=True)
-        return Response({"status":"success","organisations":organisations_serializer.data})
+        user_inst = request.user
+        memb_inst_m = Member.objects.filter(user=user_inst).select_related('organisation')
+        org_seri_m = ListOrganisationSerializer(memb_inst_m,many=True)
+        return Response({"status":"success","organisations":org_seri_m.data})
 
     def get_org(self,request):
         org_id = request.GET['org_id']
-        organisation =  Organisation.objects.get(pk=org_id)
-        members = organisation.member.all()
-        members_serializer = ListMembersSerializer(members,many=True)
-        organisation_serializer = GetOrganisationSerializer(organisation)
-        return Response({'status':'success','organisation':organisation_serializer.data,'members':members_serializer.data})
+        if not org_id or org_id.isdigits():
+            raise serializers.ValidationError('invalid org_id')
+        org_inst =  Organisation.objects.get(pk=org_id)
+        memb_inst_m = org_inst.member.all()
+        memb_seri_m = ListMembersSerializer(memb_inst_m,many=True)
+        org_seri = GetOrganisationSerializer(org_inst)
+        return Response({'status':'success','organisation':org_seri.data,'members':memb_seri_m.data})
     
     def assign_role(self,request):
         serializer = ChangeRoleSerializer(data=request.data)
@@ -57,25 +65,21 @@ class OrganisationViewSet(viewsets.ViewSet):
         return Response({'status':'success','member':role_change_object})
     
     def create_link(self,request):
-        serializer = CreateLinkSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        link_object = serializer.validated_data
-        user = request.user
-        admin_member = user.member.filter(organisation=link_object['org_id'],role='admin').first()
-        if not admin_member:
+        memb_seri = CreateMemberSerializer(data=request.data)
+        memb_seri.is_valid(raise_exception=True)
+        memb_data = memb_seri.validated_data
+        user_inst = request.user
+        adm_inst = user_inst.member.filter(organisation=memb_data['organisation'],role='admin').first()
+        if not adm_inst:
             raise exceptions.PermissionDenied('you are not the admin of this organisation')
-        link = 'https://' + request.get_host() + '/organisation/join?token=' + serializer.link(link_object)
-        return Response({'status':'succcess','link':link,**link_object})
+        link = create_link(request,memb_data,datetime.now() + timedelta(minutes=15),'/organisation/join')
+        return Response({'status':'succcess',**memb_data,'link':link})
 
     def join_organisation(self,request):
-        serializer = JoinLinkSerializer(data={'link':request.GET.get('token')})
-        serializer.is_valid(raise_exception=True)
-        member_object = serializer.validated_data
-        user = request.user
-        member = Member.objects.filter(user=user,organisation=member_object['org_id']).first()
-        if member:
-            raise exceptions.ValidationError('you are already part of the organisation')
-        serializer.save(user=user)
-        member_object.pop('exp')
-        return Response({'status':'success',**member_object})
+        user_inst = request.user
+        memb_seri = JoinMemberSerializer(data={**verify_token(request),'user':user_inst.pk})
+        memb_seri.is_valid(raise_exception=True)
+        memb_data = memb_seri.validated_data
+        memb_seri.save()
+        return Response({'status':'success',**memb_data})
        
