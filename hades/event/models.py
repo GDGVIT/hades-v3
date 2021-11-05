@@ -31,4 +31,7 @@ class Participant(models.Model):
     user = models.ForeignKey(User,on_delete=models.CASCADE,related_name='participant')
     event = models.ForeignKey(Event,on_delete=models.CASCADE,related_name='participants')
 
+    class Meta:
+        unique_together = ('user','event')
+
 

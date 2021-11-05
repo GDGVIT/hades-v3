@@ -1,4 +1,4 @@
-from rest_framework import serializers
+from rest_framework import serializers,validators
 from django.conf import settings
 
 from organisation.models import Organisation
@@ -10,37 +10,18 @@ import jwt
 key = settings.SECRET_KEY
 
 
-class CreateLinkSerializer(serializers.Serializer):
-    event_id = serializers.IntegerField()
+class CreateParticipantSerializer(serializers.Serializer):
+    event_id = serializers.IntegerField(source='event')
     refferal_user = serializers.IntegerField(required=False)
-    exp = serializers.DateTimeField()
-
-    def validate(self, data):
-        data.update({'link':jwt.encode({**data},key,'HS256')})
-        return data
-
-class JoinLinkSerializer(serializers.ModelSerializer):
-    link = serializers.CharField()
     class Meta:
         model = Participant
-        exclude = ['user','event']
-    
-    def validate(self, data):
-        try:
-            link = jwt.decode(data['link'],key,'HS256')
-        except Exception as e:
-            print(e)
-            raise serializers.ValidationError('invalid link')
-        
-        return link
+        fields = ['event_id']
 
-    def create(self, validated_data):
-        event = Event(pk=validated_data['event_id'])
-        refferal = validated_data.get('refferal_user')
-        user = validated_data['user']
-        participant = Participant(event=event,user=user)
-        participant.save()
-        return participant
+class JoinParticipantSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Participant
+        fields = '__all__'
+        validators = [validators.UniqueTogetherValidator(Participant.objects.all(),('user','event'),'you are already part of the event')]
 
 class CreateEventSerializer(serializers.ModelSerializer):
     org_id = serializers.IntegerField()
