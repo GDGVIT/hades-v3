@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from event.models import Event
 from .serializers import CreateEventSerializer, JoinParticipantSerializer,CreateParticipantSerializer, ListParticipantsSerializer
 from utils.link import *
+from .perms import *
 
 class EventViewSet(viewsets.ViewSet):
     
@@ -34,17 +35,20 @@ class EventViewSet(viewsets.ViewSet):
         return Response({'status':'success',**part_data})
 
     def list_participants(self,request):
-        user = request.user
+        user_inst = request.user
         event_id = request.GET.get('event_id')
         if not event_id or not event_id.isdigit():
             raise serializers.ValidationError('event_id is invalid')
-        event = Event.objects.get(pk=event_id)
-        if not event:
-            raise serializers.ValidationError('event does not exist')
-        member = user.member.filter(organisation=event.organisation).first()
-        if not member:
-            raise exceptions.PermissionDenied('you are not a member of this organisation')
-        participants = event.participants.all().select_related('user')
-        serializer = ListParticipantsSerializer(participants,many=True)
-        return Response({'status':'success','participants':serializer.data})
+        if not has_permission('list_memb',event_id,user_inst):
+            raise exceptions.PermissionDenied('you do not have sufficient permissions')
+        part_inst_m = Event.objects.get(id=event_id).participants.all().select_related('user')
+        part_seri_m = ListParticipantsSerializer(part_inst_m,many=True)
+        return Response({'status':'success','participants':part_seri_m.data})
 
+    def list_permission(self,request):
+        user_inst = request.user
+        event_id = request.GET.get('event_id')
+        if not event_id or not event_id.isdigit():
+            raise serializers.ValidationError('event_id is invalid')
+        role_perm_m = list_permissions(event_id,user_inst)
+        return Response({'status':'success','permissions':role_perm_m})

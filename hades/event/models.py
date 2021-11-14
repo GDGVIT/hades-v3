@@ -2,7 +2,7 @@ from django.db import models
 from django.core.exceptions import ValidationError
 
 from user.models import User
-from organisation.models import Organisation
+from organisation.models import Organisation,Role
 
 def validate_phone_no(value):
     if not value.isdigit() or len(value) != 10:
@@ -33,5 +33,10 @@ class Participant(models.Model):
 
     class Meta:
         unique_together = ('user','event')
+
+class Permission(models.Model):
+    perm = models.CharField(max_length=10)
+    event = models.ForeignKey(Event,on_delete=models.CASCADE,related_name='permissions')
+    role = models.ManyToManyField(Role,related_name='permissions')
 
 

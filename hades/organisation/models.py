@@ -25,7 +25,7 @@ class Role(models.Model):
 
 class Member(models.Model):
     user = models.ForeignKey(User,on_delete=models.CASCADE,related_name='member')
-    organisation = models.ForeignKey(Organisation,on_delete=models.CASCADE,related_name='member')
+    organisation = models.ForeignKey(Organisation,on_delete=models.CASCADE,related_name='members')
     role = models.ManyToManyField(Role,related_name='members',null=True)
 
     class Meta:
